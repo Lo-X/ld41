@@ -3,7 +3,12 @@
 //
 
 #include "Application.hpp"
+#include "events.hpp"
 #include "typedefs.hpp"
+#include "states/GameState.hpp"
+#include "systems/PlayerControlledSystem.hpp"
+#include "PlayerController.hpp"
+#include "systems/PhysicsSystem.hpp"
 #include <Fluffy/ECS/EntityManager.hpp>
 #include <Fluffy/ECS/SystemManager.hpp>
 #include <Fluffy/Utility/Clock.hpp>
@@ -24,10 +29,21 @@ Application::Application(unsigned int width, unsigned int height, const std::str
     mServiceContainer.set<TextureHolder>();
     mServiceContainer.set<FontHolder>();
 
+    mServiceContainer.set<PlayerController>(&mServiceContainer);
+
     mServiceContainer.give<sf::RenderWindow>(mWindow);
 
     // Load assets here
     mServiceContainer.get<FontHolder>()->load("main", "assets/fonts/main.ttf");
+
+    mServiceContainer.get<TextureHolder>()->load("background", "assets/textures/background.png");
+    mServiceContainer.get<TextureHolder>()->load("floor", "assets/textures/floor.png");
+    mServiceContainer.get<TextureHolder>()->get("floor").setRepeated(true);
+    mServiceContainer.get<TextureHolder>()->load("wall", "assets/textures/wall.png");
+    mServiceContainer.get<TextureHolder>()->get("wall").setRepeated(true);
+    mServiceContainer.get<TextureHolder>()->load("tile1", "assets/textures/tile1.png");
+    mServiceContainer.get<TextureHolder>()->get("tile1").setRepeated(true);
+    mServiceContainer.get<TextureHolder>()->load("player", "assets/textures/player.png");
 
     // Stats
     mStatisticsText.setFont(mServiceContainer.get<FontHolder>()->get("main"));
@@ -37,8 +53,14 @@ Application::Application(unsigned int width, unsigned int height, const std::str
     mStatisticsText.setOutlineColor(sf::Color::Black);
 
     // States
+    mStateStack.registerState<GameState>();
+    mStateStack.push<GameState>();
+    mStateStack.forcePendingChanges();
 
     // Systems
+    mRenderSystem = mServiceContainer.get<SystemManager>()->add<RenderSystem>();
+    mServiceContainer.get<SystemManager>()->add<PhysicsSystem>();
+    mServiceContainer.get<SystemManager>()->add<PlayerControlledSystem>();
     // ...
     mServiceContainer.get<SystemManager>()->configure();
 }
@@ -63,11 +85,9 @@ void Application::run()
             AfterGameTickEvent afterGameTickEvent;
             mServiceContainer.get<EventManager>()->emit(afterGameTickEvent);
 
-//            if (mStateStack.isEmpty()) {
-//                mWindow->close();
-//            }
-
-
+            if (mStateStack.isEmpty()) {
+                mWindow->close();
+            }
         }
 
         updateStatistics(elapsedTime);
@@ -86,8 +106,20 @@ void Application::processEvents()
                 mWindow->close();
                 break;
 
-            //...
+            case sf::Event::JoystickButtonPressed:
+                eventManager->emit(JoystickButtonPressedEvent(event.joystickButton.button));
+                break;
+
+            case sf::Event::KeyPressed:
+                eventManager->emit(KeyPressedEvent(event.key.code));
+                break;
+
+            default:break;
         }
+    }
+
+    if (sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::X) > 45 || sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::X) < -45) {
+        eventManager->emit(JoystickXAnalogEvent(sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::X)));
     }
 }
 
@@ -103,8 +135,8 @@ void Application::render()
     mWindow->clear();
     mWindow->setView(mWindow->getDefaultView());
 
-//    mServiceContainer.get<EventManager>()->emit(RenderEvent(*mWindow));
-//    mRenderSystem->draw(*mWindow);
+    mServiceContainer.get<EventManager>()->emit(RenderEvent(*mWindow));
+    mRenderSystem->draw(*mWindow);
 
     mWindow->draw(mStatisticsText);
     mWindow->display();

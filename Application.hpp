@@ -10,6 +10,7 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Graphics/Text.hpp>
 #include <string>
+#include "systems/RenderSystem.hpp"
 
 using namespace Fluffy::Utility;
 using namespace Fluffy::State;
@@ -34,7 +35,7 @@ private:
     ServiceContainer mServiceContainer;
     StateStack mStateStack;
 
-//    std::shared_ptr<RenderSystem> mRenderSystem;
+    std::shared_ptr<RenderSystem> mRenderSystem;
 
     // Stats
     sf::Text mStatisticsText;

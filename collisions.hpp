@@ -8,6 +8,8 @@
 
 #include "components/Body.hpp"
 #include "components/SpeedComponent.hpp"
+#include "components/PlayerAnimation.hpp"
+#include "components/BallHolder.hpp"
 
 void playerCollideWithPlatform(Entity player, Entity platform)
 {
@@ -18,6 +20,7 @@ void playerCollideWithPlatform(Entity player, Entity platform)
     }
 
     auto playerSpeed = player.component<SpeedComponent>();
+    auto playerAnimation = player.component<PlayerAnimationComponent>();
     auto playerControlled = player.component<PlayerControlledComponent>();
     auto platformBody = platform.component<BodyComponent>();
 
@@ -27,8 +30,12 @@ void playerCollideWithPlatform(Entity player, Entity platform)
         playerSpeed->x = 0;
         playerSpeed->y = 0;
     }
-    if (playerControlled.isValid()) {
+    if (playerControlled.isValid() && playerControlled->action != PlayerControlledComponent::Throw) {
         playerControlled->action = PlayerControlledComponent::Standby;
+
+        if (playerAnimation.isValid()) {
+            playerAnimation->currentAnimation = PlayerAnimationComponent::Standing;
+        }
     }
 }
 
@@ -40,8 +47,6 @@ void playerCollideWithWall(Entity player, Entity wall)
         return;
     }
 
-    auto playerSpeed = player.component<SpeedComponent>();
-    auto playerControlled = player.component<PlayerControlledComponent>();
     auto wallBody = wall.component<BodyComponent>();
 
     if (playerBody->getPosition().x < wallBody->getPosition().x) {
@@ -51,6 +56,57 @@ void playerCollideWithWall(Entity player, Entity wall)
         // Player at the right of the wall
         playerBody->setPosition(wallBody->getPosition().x + wallBody->getSize().x + playerBody->getSize().x / 2, playerBody->getPosition().y);
     }
+}
+
+void playerCollideWithBall(Entity player, Entity ball)
+{
+    auto holder = player.component<BallHolderComponent>();
+    auto controlled = player.component<PlayerControlledComponent>();
+
+    if (controlled->action != PlayerControlledComponent::Throw) {
+        holder->ball = ball;
+        holder->holding = true;
+    }
+}
+
+void ballCollideWithPlatform(Entity ball, Entity platform)
+{
+    auto ballBody = ball.component<BodyComponent>();
+
+    if (ballBody->resting) {
+        return;
+    }
+
+    auto ballSpeed = ball.component<SpeedComponent>();
+    auto platformBody = platform.component<BodyComponent>();
+
+    ballBody->setPosition(ballBody->getPosition().x, platformBody->getPosition().y - ballBody->getOrigin().y);
+    ballBody->resting = true;
+    if (ballSpeed.isValid()) {
+        ballSpeed->x = 0;
+        ballSpeed->y = 0;
+    }
+}
+
+void ballCollideWithWall(Entity ball, Entity wall)
+{
+    auto ballBody = ball.component<BodyComponent>();
+    auto ballSpeed = ball.component<SpeedComponent>();
+
+    if (ballBody->resting) {
+        return;
+    }
+
+    auto wallBody = wall.component<BodyComponent>();
+
+    if (ballSpeed->x > 0) {
+        // Player at the left of the wall
+        ballBody->setPosition(wallBody->getPosition().x - ballBody->getSize().x / 2, ballBody->getPosition().y);
+    } else {
+        // Player at the right of the wall
+        ballBody->setPosition(wallBody->getPosition().x + wallBody->getSize().x + ballBody->getSize().x / 2, ballBody->getPosition().y);
+    }
+    ballSpeed->x = 0;
 }
 
 #endif //LD41_COLLISIONS_HPP

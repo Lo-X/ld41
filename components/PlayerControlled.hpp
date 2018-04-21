@@ -23,7 +23,7 @@ struct PlayerControlledComponent : public Component<PlayerControlledComponent>
     PlayerControlledComponent() = default;
 
     Actions action = Actions::Standby;
-    sf::Vector2f speed = {200.f, 600.f}; // tweak to jump
+    sf::Vector2f speed = {250.f, 600.f}; // tweak to jump
 };
 
 #endif //LD41_PLAYERCONTROLLED_HPP

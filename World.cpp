@@ -12,6 +12,9 @@
 #include "components/SpeedComponent.hpp"
 #include "components/PlayerControlled.hpp"
 #include "collisions.hpp"
+#include "components/PlayerAnimation.hpp"
+#include "components/BallHolder.hpp"
+#include "PlayerController.hpp"
 
 World::World(ServiceContainer &container)
 : mContainer(container)
@@ -77,9 +80,66 @@ void World::buildScene()
     body->setPosition(250.f, 720-150.f);
     body->collisionCallbacks[BodyComponent::Type::Platform] = playerCollideWithPlatform;
     body->collisionCallbacks[BodyComponent::Type::Wall] = playerCollideWithWall;
+    body->collisionCallbacks[BodyComponent::Type::Ball] = playerCollideWithBall;
     player.assign<SpeedComponent>();
     player.assign<PlayerControlledComponent>();
-    player.assign<DrawableComponent>(sf::Sprite(textures->get("player")), DrawableComponent::Layer::Scene);
+    player.assign<DrawableComponent>();
+    auto holder = player.assign<BallHolderComponent>();
+    holder->handPosition = PlayerHandPositionStandingRight;
+    auto animation = player.assign<PlayerAnimationComponent>();
+    animation->currentAnimation = PlayerAnimationComponent::Standing;
+    // Standing
+    animation->animations[PlayerAnimationComponent::Standing].setTexture(textures->get("player_standing"));
+    animation->animations[PlayerAnimationComponent::Standing].setFrameSize({64, 128});
+    animation->animations[PlayerAnimationComponent::Standing].setFrameOrigin({0, 0});
+    animation->animations[PlayerAnimationComponent::Standing].setOrigin({32.f, 128.f});
+    animation->animations[PlayerAnimationComponent::Standing].setNumFrames(5);
+    animation->animations[PlayerAnimationComponent::Standing].setDuration(milliseconds(1000));
+    animation->animations[PlayerAnimationComponent::Standing].setRepeating(true);
+    // Walking
+    animation->animations[PlayerAnimationComponent::Walking].setTexture(textures->get("player_running"));
+    animation->animations[PlayerAnimationComponent::Walking].setFrameSize({64, 128});
+    animation->animations[PlayerAnimationComponent::Walking].setFrameOrigin({0, 0});
+    animation->animations[PlayerAnimationComponent::Walking].setOrigin({32.f, 128.f});
+    animation->animations[PlayerAnimationComponent::Walking].setNumFrames(3);
+    animation->animations[PlayerAnimationComponent::Walking].setDuration(milliseconds(375));
+    animation->animations[PlayerAnimationComponent::Walking].setRepeating(true);
+    // Jumping
+    animation->animations[PlayerAnimationComponent::Jumping].setTexture(textures->get("player_jumping"));
+    animation->animations[PlayerAnimationComponent::Jumping].setFrameSize({64, 128});
+    animation->animations[PlayerAnimationComponent::Jumping].setFrameOrigin({0, 0});
+    animation->animations[PlayerAnimationComponent::Jumping].setOrigin({32.f, 128.f});
+    animation->animations[PlayerAnimationComponent::Jumping].setNumFrames(2);
+    animation->animations[PlayerAnimationComponent::Jumping].setDuration(milliseconds(250));
+    animation->animations[PlayerAnimationComponent::Jumping].setRepeating(true);
+    // Attacking
+    animation->animations[PlayerAnimationComponent::Attacking].setTexture(textures->get("player_attacking"));
+    animation->animations[PlayerAnimationComponent::Attacking].setFrameSize({64, 128});
+    animation->animations[PlayerAnimationComponent::Attacking].setFrameOrigin({0, 0});
+    animation->animations[PlayerAnimationComponent::Attacking].setOrigin({32.f, 128.f});
+    animation->animations[PlayerAnimationComponent::Attacking].setNumFrames(4);
+    animation->animations[PlayerAnimationComponent::Attacking].setDuration(milliseconds(333));
+    animation->animations[PlayerAnimationComponent::Attacking].setRepeating(false);
+    // Dead
+    animation->animations[PlayerAnimationComponent::Dead].setTexture(textures->get("player_dead"));
+    animation->animations[PlayerAnimationComponent::Dead].setFrameSize({85, 20});
+    animation->animations[PlayerAnimationComponent::Dead].setFrameOrigin({0, 0});
+    animation->animations[PlayerAnimationComponent::Dead].setOrigin({43.f, 20.f});
+    animation->animations[PlayerAnimationComponent::Dead].setNumFrames(1);
+    animation->animations[PlayerAnimationComponent::Dead].setDuration(milliseconds(2000));
+    animation->animations[PlayerAnimationComponent::Dead].setRepeating(false);
+
+    auto ball = entityManager->createEntity();
+    body = ball.assign<BodyComponent>(BodyComponent::Ball, true, true);
+    body->setPosition(500, 100);
+    body->setSize({15, 15});
+    body->setOrigin({8, 7});
+    body->resting = false;
+    body->collisionCallbacks[BodyComponent::Platform] = ballCollideWithPlatform;
+    body->collisionCallbacks[BodyComponent::Wall] = ballCollideWithWall;
+    ball.assign<SpeedComponent>();
+    auto drawable = ball.assign<DrawableComponent>(sf::Sprite(textures->get("ball")), DrawableComponent::Layer::Scene);
+    drawable->sprite.setOrigin(8, 7);
 }
 
 void World::handleCollisions()

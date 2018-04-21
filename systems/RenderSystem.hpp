@@ -50,7 +50,6 @@ public:
             auto body = entity.component<BodyComponent>();
 
             // Change position... of the drawable
-            drawable->sprite.setOrigin(body->getOrigin());
             drawable->sprite.setPosition(body->getPosition());
             layers[drawable->layer].push_back(drawable);
 
@@ -59,7 +58,7 @@ public:
             rectangleShape.setSize({boundingRect.width, boundingRect.height});
             rectangleShape.setPosition({boundingRect.left, boundingRect.top});
             rectangleShape.setOutlineColor(sf::Color::Red);
-            rectangleShape.setOutlineThickness(2.f);
+            rectangleShape.setOutlineThickness(1.f);
             rectangleShape.setFillColor(sf::Color::Transparent);
             debugBoxes.push_back(rectangleShape);
         }

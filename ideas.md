@@ -20,9 +20,20 @@
 
 ### Goal?
 
-- Deliver Jennifer from evil Rexx
+- Deliver Jennifer from evil Rexx?
+- To... goal at the end of the level
 
 ### Graphisms?
 
 - Mario like?
 - 
+
+
+### Animations
+
+#### Jean Micheng
+
+- standing: 5 frames (r) of 64x128 @5fps // duration = 1s
+- running: 3 frames  of 64x128 @8fps // duration = 0.375s
+- falling: 2 frames of 64x128 @8fps // duration = 0.25s
+- attacking: 4 frames of 64x128 @12fps // duration = 0.33s

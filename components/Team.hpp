@@ -19,6 +19,12 @@ struct TeamComponent : public Component<TeamComponent>
     TeamComponent() = default;
     explicit TeamComponent(Teams team) : team(team) {}
 
+    Teams getOpposing(Teams t) {
+        if (t == Player) { return AI; }
+
+        return Player;
+    }
+
     Teams team = Teams::AI;
 };
 

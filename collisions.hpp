@@ -66,10 +66,10 @@ void playerCollideWithBall(Entity player, Entity ball)
     auto controlled = player.component<PlayerControlledComponent>();
     auto taken = ball.component<BallComponent>();
 
-    if (!taken->taken && controlled->canMove()) {
+    if (!taken->taken() && controlled->canMove()) {
         holder->ball = ball;
         holder->holding = true;
-        taken->taken = true;
+        taken->take(player);
     }
 }
 
@@ -78,16 +78,16 @@ void playerCollideWithSkeleton(Entity player, Entity skeleton)
     auto playerBody = player.component<BodyComponent>();
     auto playerControlled = player.component<PlayerControlledComponent>();
     auto skeletonBody = skeleton.component<BodyComponent>();
+    auto skeletonControlled = skeleton.component<AIControlledComponent>();
 
     if (playerControlled->action == PlayerControlledComponent::Attack) {
         auto skeletonSpeed = skeleton.component<SpeedComponent>();
         auto skeletonHolder = skeleton.component<BallHolderComponent>();
-        auto skeletonControlled = skeleton.component<AIControlledComponent>();
 
         if (skeletonHolder->holding) {
             auto ball = skeletonHolder->ball.component<BallComponent>();
             auto ballBody = skeletonHolder->ball.component<BodyComponent>();
-            ball->taken = false;
+            ball->drop();
             ballBody->resting = false;
             skeletonHolder->holding = false;
         }
@@ -102,6 +102,28 @@ void playerCollideWithSkeleton(Entity player, Entity skeleton)
             skeletonSpeed->x = -500.f;
             skeletonSpeed->y = -100.f;
         }
+    } else if (skeletonControlled->action == AIControlledComponent::Attack) {
+        auto playerSpeed = player.component<SpeedComponent>();
+        auto playerHolder = player.component<BallHolderComponent>();
+
+        if (playerHolder->holding) {
+            auto ball = playerHolder->ball.component<BallComponent>();
+            auto ballBody = playerHolder->ball.component<BodyComponent>();
+            ball->drop();
+            ballBody->resting = false;
+            playerHolder->holding = false;
+        }
+        playerControlled->action = PlayerControlledComponent::Stunned;
+
+        if (playerBody->getPosition().x < skeletonBody->getPosition().x) {
+            // Player at the left of the skeleton
+            playerSpeed->x = -500.f;
+            playerSpeed->y = -100.f;
+        } else {
+            // Player at the right of the skeleton
+            playerSpeed->x = 500.f;
+            playerSpeed->y = -100.f;
+        }
     } else {
         if (abs((int)playerBody->getPosition().x - (int)skeletonBody->getPosition().x) > ((int)playerBody->getSize().x / 2 - 10)) {
             return;
@@ -109,9 +131,11 @@ void playerCollideWithSkeleton(Entity player, Entity skeleton)
         if (playerBody->getPosition().x < skeletonBody->getPosition().x) {
             // Player at the left of the skeleton
             playerBody->setPosition(skeletonBody->getPosition().x - 15, playerBody->getPosition().y);
+            skeletonBody->setPosition(skeletonBody->getPosition().x + 15, skeletonBody->getPosition().y);
         } else {
             // Player at the right of the skeleton
             playerBody->setPosition(skeletonBody->getPosition().x + 15, playerBody->getPosition().y);
+            skeletonBody->setPosition(skeletonBody->getPosition().x - 15, skeletonBody->getPosition().y);
         }
     }
 
@@ -211,11 +235,55 @@ void skeletonCollideWithBall(Entity skeleton, Entity ball)
     auto controlled = skeleton.component<AIControlledComponent>();
     auto taken = ball.component<BallComponent>();
 
-    if (!taken->taken && controlled->canMove()) {
+    if (!taken->taken() && controlled->canMove()) {
         holder->ball = ball;
         holder->holding = true;
-        taken->taken = true;
+        taken->take(skeleton);
     }
 }
+
+//void skeletonCollideWithPlayer(Entity skeleton, Entity player)
+//{
+//    auto skeletonBody = skeleton.component<BodyComponent>();
+//    auto skeletonControlled = skeleton.component<AIControlledComponent>();
+//    auto playerBody = player.component<BodyComponent>();
+//
+//    if (skeletonControlled->action == AIControlledComponent::Attack) {
+//        auto playerSpeed = player.component<SpeedComponent>();
+//        auto playerHolder = player.component<BallHolderComponent>();
+//        auto playerControlled = player.component<PlayerControlledComponent>();
+//
+//        if (playerHolder->holding) {
+//            auto ball = playerHolder->ball.component<BallComponent>();
+//            auto ballBody = playerHolder->ball.component<BodyComponent>();
+//            ball->drop();
+//            ballBody->resting = false;
+//            playerHolder->holding = false;
+//        }
+//        playerControlled->action = PlayerControlledComponent::Stunned;
+//
+//        if (skeletonBody->getPosition().x < playerBody->getPosition().x) {
+//            // Player at the left of the player
+//            playerSpeed->x = 500.f;
+//            playerSpeed->y = -100.f;
+//        } else {
+//            // Player at the right of the player
+//            playerSpeed->x = -500.f;
+//            playerSpeed->y = -100.f;
+//        }
+//    } else {
+//        if (abs((int)skeletonBody->getPosition().x - (int)playerBody->getPosition().x) > ((int)skeletonBody->getSize().x / 2 - 10)) {
+//            return;
+//        }
+//        if (skeletonBody->getPosition().x < playerBody->getPosition().x) {
+//            // Player at the left of the player
+//            skeletonBody->setPosition(playerBody->getPosition().x - 15, skeletonBody->getPosition().y);
+//        } else {
+//            // Player at the right of the player
+//            skeletonBody->setPosition(playerBody->getPosition().x + 15, skeletonBody->getPosition().y);
+//        }
+//    }
+//
+//}
 
 #endif //LD41_COLLISIONS_HPP

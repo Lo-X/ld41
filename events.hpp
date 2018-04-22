@@ -8,6 +8,7 @@
 #include <Fluffy/Event/Event.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Window/Keyboard.hpp>
+#include "components/Team.hpp"
 
 using namespace Fluffy::Event;
 
@@ -38,5 +39,32 @@ struct JoystickXAnalogEvent : public Event<JoystickXAnalogEvent>
 
     float position = 0.f;
 };
+
+/*******************************************************************************/
+/***************************** Game Events *************************************/
+/*******************************************************************************/
+
+struct BallDroppedEvent : public Event<BallDroppedEvent>
+{
+};
+
+struct BallTakenEvent : public Event<BallTakenEvent>
+{
+    explicit BallTakenEvent(Entity holder) : holder(holder) {
+        team = holder.component<TeamComponent>()->team;
+    }
+
+    Entity holder;
+    TeamComponent::Teams team;
+};
+
+struct GoalScoredEvent : public Event<GoalScoredEvent>
+{
+    GoalScoredEvent(TeamComponent::Teams team) : team(team) {}
+
+    TeamComponent::Teams team;
+};
+
+
 
 #endif //LD41_EVENTS_HPP

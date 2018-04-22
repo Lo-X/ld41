@@ -61,7 +61,7 @@ void ThrowAction::runTask()
 
         body->resting = false;
         mHolder->holding = false;
-        taken->taken = false;
+        taken->drop();
     }
 
     while (!ended) {

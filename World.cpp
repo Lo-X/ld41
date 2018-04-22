@@ -152,22 +152,24 @@ void World::buildScene()
     body->resting = false;
     body->collisionCallbacks[BodyComponent::Platform] = ballCollideWithPlatform;
     body->collisionCallbacks[BodyComponent::Wall] = ballCollideWithWall;
-    body->collisionCallbacks[BodyComponent::Goal] = [] (Entity ball, Entity goal) {
+    body->collisionCallbacks[BodyComponent::Goal] = [&] (Entity ball, Entity goal) {
         auto taken = ball.component<BallComponent>();
 
-        if (!taken->taken) {
+        if (!taken->taken()) {
             auto body = ball.component<BodyComponent>();
             auto speed = ball.component<SpeedComponent>();
+            auto team = goal.component<TeamComponent>();
             body->setPosition(400, 100);
             body->resting = false;
             speed->x = 0;
             speed->y = 0;
 
-            std::cout << "SCORE!!!" << std::endl;
+            TeamComponent::Teams t = team->getOpposing(team->team);
+            mContainer.get<EventManager>()->emit(GoalScoredEvent(t));
         }
     };
     ball.assign<SpeedComponent>();
-    ball.assign<BallComponent>();
+    ball.assign<BallComponent>(mContainer.get<EventManager>());
     auto drawable = ball.assign<DrawableComponent>(sf::Sprite(textures->get("ball")), DrawableComponent::Layer::Scene);
     drawable->sprite.setOrigin(8, 7);
 
@@ -179,6 +181,7 @@ void World::buildScene()
     body->collisionCallbacks[BodyComponent::Type::Platform] = skeletonCollideWithPlatform;
     body->collisionCallbacks[BodyComponent::Type::Wall] = skeletonCollideWithWall;
     body->collisionCallbacks[BodyComponent::Type::Ball] = skeletonCollideWithBall;
+//    body->collisionCallbacks[BodyComponent::Type::Player] = skeletonCollideWithPlayer;
     skeleton.assign<SpeedComponent>();
     skeleton.assign<AIControlledComponent>();
     skeleton.assign<DrawableComponent>();
@@ -219,13 +222,22 @@ void World::buildScene()
     animation->animations[PlayerAnimationComponent::Throwing].setNumFrames(2);
     animation->animations[PlayerAnimationComponent::Throwing].setDuration(milliseconds(400));
     animation->animations[PlayerAnimationComponent::Throwing].setRepeating(false);
+    // Attacking
+    animation->animations[PlayerAnimationComponent::Attacking].setTexture(textures->get("ai_attacking"));
+    animation->animations[PlayerAnimationComponent::Attacking].setFrameSize({64, 110});
+    animation->animations[PlayerAnimationComponent::Attacking].setFrameOrigin({0, 0});
+    animation->animations[PlayerAnimationComponent::Attacking].setOrigin({32.f, 110.f});
+    animation->animations[PlayerAnimationComponent::Attacking].setNumFrames(2);
+    animation->animations[PlayerAnimationComponent::Attacking].setDuration(milliseconds(400));
+    animation->animations[PlayerAnimationComponent::Attacking].setRepeating(false);
 
     auto goal = entityManager->createEntity();
     body = goal.assign<BodyComponent>(BodyComponent::Goal, true, false);
     body->setPosition(1200, 720-150);
     body->setSize({40, 120});
     body->setOrigin({20, 120});
-    goal.assign<TeamComponent>(TeamComponent::AI);
+//    goal.assign<TeamComponent>(TeamComponent::AI);
+    goal.assign<TeamComponent>(TeamComponent::Player);
     drawable = goal.assign<DrawableComponent>(sf::Sprite(textures->get("goal")), DrawableComponent::Layer::Scene);
     drawable->sprite.setOrigin({20, 120});
 }

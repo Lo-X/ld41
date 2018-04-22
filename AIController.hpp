@@ -43,18 +43,45 @@ private:
 
 };
 
+class SAttackAction
+{
+public:
+    SAttackAction();
+    void execute(ComponentHandle<AIControlledComponent> entity, ComponentHandle<PlayerAnimationComponent> animation);
+    bool isFinished();
+
+private:
+    void runTask();
+
+private:
+    sf::Thread mThread;
+    sf::Mutex  mMutex;
+    bool       mFinished;
+    Clock      mClock;
+    ComponentHandle<AIControlledComponent> mEntity;
+    ComponentHandle<PlayerAnimationComponent>  mAnimation;
+
+};
+
 
 class AIController
 {
 public:
     explicit AIController(ServiceContainer* container);
     ~AIController();
+
+    void onTick(const GameTickEvent& tick);
+    void onBallTaken(const BallTakenEvent& event);
+    void onBallDropped(const BallDroppedEvent& event);
+    void onGoalScored(const GoalScoredEvent& event);
 private:
     ServiceContainer* mContainer;
-    Slot mBeforeTick;
-    Slot mJoystickButtonPressedSlot;
-    Slot mJoystickXAxisUsedSlot;
-    SThrowAction mAttackAction;
+    Slot mTick;
+    Slot mBallTaken;
+    Slot mBallDropped;
+    Slot mGoalScored;
+    SThrowAction mThrowAction;
+    SAttackAction mAttackAction;
 };
 
 

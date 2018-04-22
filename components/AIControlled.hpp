@@ -22,14 +22,21 @@ struct AIControlledComponent : public Component<AIControlledComponent>
         Stunned,
     };
 
+    enum State {
+        LookingForBall,
+        GoForPlayer,
+        GoForGoal
+    };
+
     AIControlledComponent() = default;
 
     bool canMove() const {
         return action != Throw && action != Attack && action != Stunned;
     }
 
-    Actions action = Actions::Standby;
-    sf::Vector2f speed = {250.f, 600.f}; // tweak to jump
+    Actions action = Standby;
+    State state = LookingForBall;
+    sf::Vector2f speed = {230.f, 600.f}; // tweak to jump
 };
 
 #endif //LD41_AICONTROLLED_HPP

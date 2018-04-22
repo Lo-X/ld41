@@ -25,6 +25,9 @@ private:
     World* mWorld;
     Slot mTickSlot;
     Slot mAfterTickSlot;
+    Time mAfterGoalTimer;
+    Time mSpawnNext;
+    unsigned int mSpawned = 0;
 };
 
 

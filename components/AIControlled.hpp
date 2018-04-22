@@ -23,12 +23,20 @@ struct AIControlledComponent : public Component<AIControlledComponent>
     };
 
     enum State {
+        Idle,
         LookingForBall,
         GoForPlayer,
-        GoForGoal
+        GoForGoal,
+        Backup,
+    };
+
+    enum Role {
+        Keeper,
+        Attacker
     };
 
     AIControlledComponent() = default;
+    explicit AIControlledComponent(Role role) : role(role) {}
 
     bool canMove() const {
         return action != Throw && action != Attack && action != Stunned;
@@ -36,6 +44,7 @@ struct AIControlledComponent : public Component<AIControlledComponent>
 
     Actions action = Standby;
     State state = LookingForBall;
+    Role role = Attacker;
     sf::Vector2f speed = {230.f, 600.f}; // tweak to jump
 };
 

@@ -178,7 +178,7 @@ void ballCollideWithWall(Entity ball, Entity wall)
         // Player at the right of the wall
         ballBody->setPosition(wallBody->getPosition().x + wallBody->getSize().x + ballBody->getSize().x / 2, ballBody->getPosition().y);
     }
-    ballSpeed->x = 0;
+    ballSpeed->x = -ballSpeed->x;
 }
 
 void skeletonCollideWithPlatform(Entity skeleton, Entity platform)

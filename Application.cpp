@@ -13,6 +13,8 @@
 #include "systems/BallHolderSystem.hpp"
 #include "AIController.hpp"
 #include "systems/AIControlledSystem.hpp"
+#include "systems/CameraSystem.hpp"
+#include "systems/UISystem.hpp"
 #include <Fluffy/ECS/EntityManager.hpp>
 #include <Fluffy/ECS/SystemManager.hpp>
 #include <Fluffy/Utility/Clock.hpp>
@@ -42,6 +44,7 @@ Application::Application(unsigned int width, unsigned int height, const std::str
     mServiceContainer.get<FontHolder>()->load("main", "assets/fonts/main.ttf");
 
     mServiceContainer.get<TextureHolder>()->load("background", "assets/textures/background.png");
+    mServiceContainer.get<TextureHolder>()->get("background").setRepeated(true);
     mServiceContainer.get<TextureHolder>()->load("floor", "assets/textures/floor.png");
     mServiceContainer.get<TextureHolder>()->get("floor").setRepeated(true);
     mServiceContainer.get<TextureHolder>()->load("wall", "assets/textures/wall.png");
@@ -59,6 +62,10 @@ Application::Application(unsigned int width, unsigned int height, const std::str
     mServiceContainer.get<TextureHolder>()->load("player_dead", "assets/textures/player_dead.png");
     mServiceContainer.get<TextureHolder>()->load("ball", "assets/textures/ball.png");
     mServiceContainer.get<TextureHolder>()->load("goal", "assets/textures/goal.png");
+    mServiceContainer.get<TextureHolder>()->load("ui_help", "assets/textures/ui_help.png");
+    mServiceContainer.get<TextureHolder>()->load("ui_goal", "assets/textures/ui_goal.png");
+    mServiceContainer.get<TextureHolder>()->load("ui_points_player", "assets/textures/ui_points_player.png");
+    mServiceContainer.get<TextureHolder>()->load("ui_points_ai", "assets/textures/ui_points_ai.png");
 
     // Stats
     mStatisticsText.setFont(mServiceContainer.get<FontHolder>()->get("main"));
@@ -79,6 +86,8 @@ Application::Application(unsigned int width, unsigned int height, const std::str
     mServiceContainer.get<SystemManager>()->add<BallHolderSystem>();
     mServiceContainer.get<SystemManager>()->add<PlayerControlledSystem>();
     mServiceContainer.get<SystemManager>()->add<AIControlledSystem>();
+    mServiceContainer.get<SystemManager>()->add<CameraSystem>();
+    mServiceContainer.get<SystemManager>()->add<UISystem>();
     // ...
     mServiceContainer.get<SystemManager>()->configure();
 }
@@ -139,6 +148,13 @@ void Application::processEvents()
     if (sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::X) > 45 || sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::X) < -45) {
         eventManager->emit(JoystickXAnalogEvent(sf::Joystick::getAxisPosition(0, sf::Joystick::Axis::X)));
     }
+
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) { eventManager->emit(KeyDownEvent(sf::Keyboard::A)); }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)) { eventManager->emit(KeyDownEvent(sf::Keyboard::Q)); }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::E)) { eventManager->emit(KeyDownEvent(sf::Keyboard::E)); }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) { eventManager->emit(KeyDownEvent(sf::Keyboard::D)); }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) { eventManager->emit(KeyDownEvent(sf::Keyboard::Right)); }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) { eventManager->emit(KeyDownEvent(sf::Keyboard::Left)); }
 }
 
 void Application::update(Time dt)
@@ -156,7 +172,7 @@ void Application::render()
     mServiceContainer.get<EventManager>()->emit(RenderEvent(*mWindow));
     mRenderSystem->draw(*mWindow);
 
-    mWindow->draw(mStatisticsText);
+//    mWindow->draw(mStatisticsText);
     mWindow->display();
 }
 

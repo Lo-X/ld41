@@ -24,6 +24,7 @@ struct DrawableComponent : public Component<DrawableComponent>
 
     Layer layer = Layer::Scene;
     sf::Sprite sprite;
+    bool visible = true;
 };
 
 

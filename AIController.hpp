@@ -10,6 +10,7 @@
 #include <Fluffy/Utility/ServiceContainer.hpp>
 #include <SFML/System/Thread.hpp>
 #include <SFML/System/Mutex.hpp>
+#include <list>
 #include "events.hpp"
 #include "components/PlayerAnimation.hpp"
 #include "components/BallHolder.hpp"
@@ -80,8 +81,8 @@ private:
     Slot mBallTaken;
     Slot mBallDropped;
     Slot mGoalScored;
-    SThrowAction mThrowAction;
-    SAttackAction mAttackAction;
+    std::list<SThrowAction*> mThrowActions;
+    std::list<SAttackAction*> mAttackActions;
 };
 
 

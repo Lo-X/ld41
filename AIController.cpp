@@ -110,7 +110,7 @@ void SAttackAction::runTask()
 {
     bool ended = false;
     while (!ended) {
-        if (mClock.elapsedTime() >= milliseconds(250)) {
+        if (mClock.elapsedTime() >= milliseconds(400)) {
             ended = true;
         }
     }
@@ -169,7 +169,7 @@ void AIController::onTick(const GameTickEvent &tick)
                 for (auto b : entityManager->each<BallComponent>()) {
                     ball = b;
                     break;
-                };
+                }
                 if (!ball.isValid()) { return; }
 
                 //
@@ -177,7 +177,7 @@ void AIController::onTick(const GameTickEvent &tick)
                 sf::Vector2f diff = body->getPosition() - ballBody->getPosition();
 
                 if (controller->action == AIControlledComponent::Actions::Standby) {
-                    if (diff.y > 120 && controller->canMove() && controller->action != AIControlledComponent::Actions::Jump) {
+                    if (diff.y > 120 && controller->canMove() && controller->action != AIControlledComponent::Actions::Jump && controller->role != AIControlledComponent::Role::Keeper) {
                         animation->currentAnimation = PlayerAnimationComponent::Jumping;
                         if (diff.x < 0) {
                             animation->setDirection(PlayerAnimationComponent::Directions::Right);
@@ -267,7 +267,9 @@ void AIController::onTick(const GameTickEvent &tick)
                             animation->currentAnimation = PlayerAnimationComponent::Attacking;
                             animation->animations[animation->currentAnimation].restart();
                             controller->action = AIControlledComponent::Actions::Attack;
-                            mAttackAction.execute(controller, animation);
+                            SAttackAction* action = new SAttackAction();
+                            action->execute(controller, animation);
+                            mAttackActions.push_back(action);
                         } else {
                             if (diff.x < 0) {
                                 animation->currentAnimation = PlayerAnimationComponent::Walking;
@@ -300,7 +302,7 @@ void AIController::onTick(const GameTickEvent &tick)
 
 
             /****************************************************************/
-            /*********************** GO FOR BALL ****************************/
+            /*********************** GO FOR GOAL ****************************/
             /****************************************************************/
             case AIControlledComponent::GoForGoal: {
                 auto body = entity.component<BodyComponent>();
@@ -313,14 +315,13 @@ void AIController::onTick(const GameTickEvent &tick)
                 for (auto e : entityManager->each<BodyComponent, TeamComponent>()) {
                     if (e.component<BodyComponent>()->type == BodyComponent::Goal && e.component<TeamComponent>()->team == TeamComponent::Player) {
                         goal = e;
-                        break;
                     }
                 };
                 if (!goal.isValid()) { return; }
 
                 //
-                auto ballBody = goal.component<BodyComponent>();
-                float diff = body->getPosition().x - ballBody->getPosition().x;
+                auto goalBody = goal.component<BodyComponent>();
+                float diff = body->getPosition().x - goalBody->getPosition().x;
 
                 if (controller->action == AIControlledComponent::Actions::Standby) {
                     if (holder->holding && abs((int)diff) < 200 && controller->canMove()) {
@@ -335,7 +336,9 @@ void AIController::onTick(const GameTickEvent &tick)
                         animation->currentAnimation = PlayerAnimationComponent::Throwing;
                         animation->animations[animation->currentAnimation].restart();
                         controller->action = AIControlledComponent::Actions::Throw;
-                        mThrowAction.execute(controller, animation, holder);
+                        SThrowAction* action = new SThrowAction();
+                        action->execute(controller, animation, holder);
+                        mThrowActions.push_back(action);
                     } else {
                         if (diff < 0) {
                             animation->currentAnimation = PlayerAnimationComponent::Walking;
@@ -365,17 +368,92 @@ void AIController::onTick(const GameTickEvent &tick)
                 }
             }
                 break;
+
+            /****************************************************************/
+            /************************** BACKUP ******************************/
+            /****************************************************************/
+            case AIControlledComponent::Backup: {
+                auto body = entity.component<BodyComponent>();
+                auto holder = entity.component<BallHolderComponent>();
+                auto animation = entity.component<PlayerAnimationComponent>();
+                auto speed = entity.component<SpeedComponent>();
+
+                //
+                Entity goal;
+                for (auto e : entityManager->each<BodyComponent, TeamComponent>()) {
+                    if (e.component<BodyComponent>()->type == BodyComponent::Goal && e.component<TeamComponent>()->team == TeamComponent::AI) {
+                        goal = e;
+                    }
+                };
+                if (!goal.isValid()) { return; }
+
+                //
+                auto goalBody = goal.component<BodyComponent>();
+                float diff = body->getPosition().x - goalBody->getPosition().x;
+
+                if (controller->action == AIControlledComponent::Actions::Standby) {
+                    if (abs((int)diff) > 500 && controller->canMove()) {
+                        if (diff < 0) {
+                            animation->currentAnimation = PlayerAnimationComponent::Walking;
+                            animation->setDirection(PlayerAnimationComponent::Directions::Right);
+                            speed->x = controller->speed.x;
+                            controller->action = AIControlledComponent::Actions::WalkRight;
+                            holder->handPosition = SkeletonHandPositionStandingRight;
+                        } else {
+                            animation->currentAnimation = PlayerAnimationComponent::Walking;
+                            animation->setDirection(PlayerAnimationComponent::Directions::Left);
+                            speed->x = -controller->speed.x;
+                            controller->action = AIControlledComponent::Actions::WalkLeft;
+                            holder->handPosition = SkeletonHandPositionStandingLeft;
+                        }
+                    }
+                } else if (controller->action == AIControlledComponent::Actions::Jump) {
+                    if (diff < 0) {
+                        animation->setDirection(PlayerAnimationComponent::Directions::Right);
+                        speed->x = controller->speed.x;
+                        holder->handPosition = SkeletonHandPositionStandingRight;
+                    } else {
+                        animation->setDirection(PlayerAnimationComponent::Directions::Left);
+                        speed->x = -controller->speed.x;
+                        holder->handPosition = SkeletonHandPositionStandingLeft;
+                    }
+                }
+            }
+                break;
         }
     }
+
+    // Cleanup actions
+    std::vector<SThrowAction*> throwsToClean;
+    std::vector<SAttackAction*> attacksToClean;
+    for (auto action : mThrowActions) {
+        if (action->isFinished()) {
+            throwsToClean.push_back(action);
+        }
+    }
+    for (auto action : mAttackActions) {
+        if (action->isFinished()) {
+            attacksToClean.push_back(action);
+        }
+    }
+    for (auto action : throwsToClean) { mThrowActions.remove(action); delete action; }
+    for (auto action : attacksToClean) { mAttackActions.remove(action); delete action; }
 }
 
 void AIController::onBallTaken(const BallTakenEvent &event)
 {
+    auto entityManager = mContainer->get<EntityManager>();
+
     Entity holder = event.holder;
     if (event.team == TeamComponent::AI) {
+        for (auto entity : entityManager->each<AIControlledComponent>()) {
+            auto controller = entity.component<AIControlledComponent>();
+            if (entity != holder && controller->role == AIControlledComponent::Role::Keeper) {
+                controller->state = AIControlledComponent::Backup;
+            }
+        }
         holder.component<AIControlledComponent>()->state = AIControlledComponent::GoForGoal;
     } else {
-        auto entityManager = mContainer->get<EntityManager>();
 
         for (auto entity : entityManager->each<AIControlledComponent>()) {
             auto controller = entity.component<AIControlledComponent>();

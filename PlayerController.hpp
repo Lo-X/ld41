@@ -70,14 +70,21 @@ public:
     explicit PlayerController(ServiceContainer* container);
     ~PlayerController();
 
-    void onBeforeTick(const BeforeGameTickEvent& event);
     void onJoystickButtonPressedEvent(const JoystickButtonPressedEvent& event);
     void onJoystickXAnalogUsedEvent(const JoystickXAnalogEvent& event);
+    void onKeyPressedEvent(const KeyPressedEvent &event);
+    void onKeyDownEvent(const KeyDownEvent &event);
+
+private:
+    void jump();
+    void attack();
+
 private:
     ServiceContainer* mContainer;
-    Slot mBeforeTick;
     Slot mJoystickButtonPressedSlot;
     Slot mJoystickXAxisUsedSlot;
+    Slot mKeyPressedSlot;
+    Slot mKeyDownSlot;
     ThrowAction mThrowAction;
     AttackAction mAttackAction;
 };

@@ -32,8 +32,30 @@ void GameState::terminate()
 
 void GameState::onGameTick(const GameTickEvent &event)
 {
+    static AIControlledComponent::Role lastSpawned = AIControlledComponent::Role::Attacker;
+
     if (!isPaused()) {
         mWorld->update(event.dt);
+        mSpawnNext += event.dt;
+
+        if (mWorld->waiting()) {
+            mAfterGoalTimer += event.dt;
+            if (mAfterGoalTimer > seconds(3.1f)) {
+                mWorld->respawnBall();
+                mAfterGoalTimer = Time::Zero;
+            }
+        }
+
+        if (mSpawnNext > seconds(45) && mSpawned < 2) {
+            if (lastSpawned == AIControlledComponent::Role::Attacker) {
+                lastSpawned = AIControlledComponent::Role::Keeper;
+            } else {
+                lastSpawned = AIControlledComponent::Role::Attacker;
+            }
+            mWorld->spawnSkeleton({1500, 100}, lastSpawned);
+            mSpawnNext = Time::Zero;
+            mSpawned++;
+        }
     }
 }
 

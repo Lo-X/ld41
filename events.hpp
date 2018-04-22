@@ -26,6 +26,13 @@ struct KeyPressedEvent : public Event<KeyPressedEvent>
     sf::Keyboard::Key key;
 };
 
+struct KeyDownEvent : public Event<KeyDownEvent>
+{
+    explicit KeyDownEvent(sf::Keyboard::Key key) : key(key) {}
+
+    sf::Keyboard::Key key;
+};
+
 struct JoystickButtonPressedEvent : public Event<JoystickButtonPressedEvent>
 {
     explicit JoystickButtonPressedEvent(unsigned int button) : button(button) {}

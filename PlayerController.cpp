@@ -12,9 +12,77 @@
 #include "components/SpeedComponent.hpp"
 #include "components/PlayerAnimation.hpp"
 #include "components/BallHolder.hpp"
+#include "components/Ball.hpp"
 
 using namespace Fluffy::ECS;
 using namespace Fluffy::Event;
+
+ThrowAction::ThrowAction()
+        : mThread(&ThrowAction::runTask, this),
+          mFinished(false)
+{
+}
+
+void ThrowAction::execute(ComponentHandle<PlayerControlledComponent> player, ComponentHandle<PlayerAnimationComponent> animation, ComponentHandle<BallHolderComponent> holder)
+{
+    mFinished = false;
+    mPlayer = player;
+    mAnimation = animation;
+    mHolder = holder;
+    mClock.restart();
+    mThread.launch();
+}
+
+bool ThrowAction::isFinished()
+{
+    sf::Lock lock(mMutex);
+
+    return mFinished;
+}
+
+void ThrowAction::runTask()
+{
+    bool ended = false;
+
+    if (mAnimation.isValid() && mHolder.isValid() && mHolder->holding && mHolder->ball.isValid()) {
+        auto speed = mHolder->ball.component<SpeedComponent>();
+        auto body = mHolder->ball.component<BodyComponent>();
+        auto taken = mHolder->ball.component<BallComponent>();
+
+        if (mAnimation->direction == PlayerAnimationComponent::Directions::Right) {
+            body->move(PlayerHandPositionThrowingRight);
+            speed->x = mHolder->ballSpeed.x;
+            speed->y = mHolder->ballSpeed.y;
+        } else {
+            body->move(PlayerHandPositionThrowingLeft);
+            speed->x = -mHolder->ballSpeed.x;
+            speed->y = mHolder->ballSpeed.y;
+        }
+
+        body->resting = false;
+        mHolder->holding = false;
+        taken->taken = false;
+    }
+
+    while (!ended) {
+        if (mClock.elapsedTime() >= milliseconds(430)) {
+            ended = true;
+        }
+    }
+
+    {
+        sf::Lock lock(mMutex);
+        if (mPlayer.isValid()) {
+            mPlayer->action = PlayerControlledComponent::Actions::Standby;
+        }
+        if (mAnimation.isValid()) {
+            mAnimation->currentAnimation = PlayerAnimationComponent::Standing;
+        }
+        mFinished = true;
+    }
+}
+
+/**********************************************************************************************************************/
 
 AttackAction::AttackAction()
         : mThread(&AttackAction::runTask, this),
@@ -22,12 +90,11 @@ AttackAction::AttackAction()
 {
 }
 
-void AttackAction::execute(ComponentHandle<PlayerControlledComponent> player, ComponentHandle<PlayerAnimationComponent> animation, ComponentHandle<BallHolderComponent> holder)
+void AttackAction::execute(ComponentHandle<PlayerControlledComponent> player, ComponentHandle<PlayerAnimationComponent> animation)
 {
     mFinished = false;
     mPlayer = player;
     mAnimation = animation;
-    mHolder = holder;
     mClock.restart();
     mThread.launch();
 }
@@ -42,27 +109,8 @@ bool AttackAction::isFinished()
 void AttackAction::runTask()
 {
     bool ended = false;
-
-    if (mAnimation.isValid() && mHolder.isValid() && mHolder->holding && mHolder->ball.isValid()) {
-        auto speed = mHolder->ball.component<SpeedComponent>();
-        auto body = mHolder->ball.component<BodyComponent>();
-
-        if (mAnimation->direction == PlayerAnimationComponent::Directions::Right) {
-            body->move(PlayerHandPositionThrowingRight);
-            speed->x = mHolder->ballSpeed.x;
-            speed->y = mHolder->ballSpeed.y;
-        } else {
-            body->move(PlayerHandPositionThrowingLeft);
-            speed->x = -mHolder->ballSpeed.x;
-            speed->y = mHolder->ballSpeed.y;
-        }
-
-        body->resting = false;
-        mHolder->holding = false;
-    }
-
     while (!ended) {
-        if (mClock.elapsedTime() >= milliseconds(430)) {
+        if (mClock.elapsedTime() >= milliseconds(250)) {
             ended = true;
         }
     }
@@ -118,7 +166,7 @@ void PlayerController::onJoystickButtonPressedEvent(const JoystickButtonPressedE
             for (auto entity : mContainer->get<EntityManager>()->each<PlayerControlledComponent>()) {
                 auto player = entity.component<PlayerControlledComponent>();
                 auto animation = entity.component<PlayerAnimationComponent>();
-                if (player->action != PlayerControlledComponent::Actions::Throw && player->action != PlayerControlledComponent::Actions::Jump) {
+                if (player->action != PlayerControlledComponent::Actions::Throw && player->action != PlayerControlledComponent::Actions::Attack && player->action != PlayerControlledComponent::Actions::Jump) {
                     auto speed = entity.component<SpeedComponent>();
                     auto body = entity.component<BodyComponent>();
                     animation->currentAnimation = PlayerAnimationComponent::Jumping;
@@ -134,15 +182,21 @@ void PlayerController::onJoystickButtonPressedEvent(const JoystickButtonPressedE
         case 1:
             for (auto entity : mContainer->get<EntityManager>()->each<PlayerControlledComponent>()) {
                 auto player = entity.component<PlayerControlledComponent>();
-                if (player->action != PlayerControlledComponent::Actions::Throw) {
+
+                if (player->canMove()) {
                     auto animation = entity.component<PlayerAnimationComponent>();
                     auto holder = entity.component<BallHolderComponent>();
 
                     if (holder->holding) {
-                        animation->currentAnimation = PlayerAnimationComponent::Attacking;
+                        animation->currentAnimation = PlayerAnimationComponent::Throwing;
                         animation->animations[animation->currentAnimation].restart();
                         player->action = PlayerControlledComponent::Actions::Throw;
-                        mAttackAction.execute(player, animation, holder);
+                        mThrowAction.execute(player, animation, holder);
+                    } else {
+                        animation->currentAnimation = PlayerAnimationComponent::Attacking;
+                        animation->animations[animation->currentAnimation].restart();
+                        player->action = PlayerControlledComponent::Actions::Attack;
+                        mAttackAction.execute(player, animation);
                     }
                 }
             }

@@ -18,6 +18,7 @@ struct PlayerAnimationComponent : public Component<PlayerAnimationComponent>
         Walking,
         Jumping,
         Attacking,
+        Throwing,
         Dead,
         COUNT
     };
@@ -48,6 +49,7 @@ struct PlayerAnimationComponent : public Component<PlayerAnimationComponent>
                 animations[Animations::Standing].setScale({1.f, 1.f});
                 animations[Animations::Walking].setScale({1.f, 1.f});
                 animations[Animations::Jumping].setScale({1.f, 1.f});
+                animations[Animations::Throwing].setScale({1.f, 1.f});
                 animations[Animations::Attacking].setScale({1.f, 1.f});
                 break;
 
@@ -55,6 +57,7 @@ struct PlayerAnimationComponent : public Component<PlayerAnimationComponent>
                 animations[Animations::Standing].setScale({-1.f, 1.f});
                 animations[Animations::Walking].setScale({-1.f, 1.f});
                 animations[Animations::Jumping].setScale({-1.f, 1.f});
+                animations[Animations::Throwing].setScale({-1.f, 1.f});
                 animations[Animations::Attacking].setScale({-1.f, 1.f});
                 break;
         }

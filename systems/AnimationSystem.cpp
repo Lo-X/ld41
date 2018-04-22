@@ -15,7 +15,7 @@ void AnimationSystem::update(EntityManager &entityManager, Fluffy::Utility::Time
         auto animation = entity.component<PlayerAnimationComponent>();
         auto player = entity.component<PlayerControlledComponent>();
 
-        if (animation->currentAnimation == PlayerAnimationComponent::Attacking && animation->animations[animation->currentAnimation].isFinished()) {
+        if (animation->currentAnimation == PlayerAnimationComponent::Throwing && animation->animations[animation->currentAnimation].isFinished()) {
             animation->currentAnimation = PlayerAnimationComponent::Standing;
         }
 

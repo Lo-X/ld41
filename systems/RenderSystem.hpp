@@ -72,9 +72,9 @@ public:
             window.draw(drawable_component->sprite);
         }
 
-        for (auto shape : debugBoxes) {
-            window.draw(shape);
-        }
+//        for (auto shape : debugBoxes) {
+//            window.draw(shape);
+//        }
         window.setView(window.getDefaultView());
     }
 

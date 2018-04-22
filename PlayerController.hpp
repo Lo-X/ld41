@@ -22,10 +22,10 @@ using namespace Fluffy::Utility;
 #define PlayerHandPositionThrowingRight sf::Vector2f(-20.f, -60.f)
 #define PlayerHandPositionThrowingLeft sf::Vector2f(20.f, -60.f)
 
-class AttackAction
+class ThrowAction
 {
 public:
-    AttackAction();
+    ThrowAction();
     void execute(ComponentHandle<PlayerControlledComponent> player, ComponentHandle<PlayerAnimationComponent> animation, ComponentHandle<BallHolderComponent> holder);
     bool isFinished();
 
@@ -40,6 +40,26 @@ private:
     ComponentHandle<PlayerControlledComponent> mPlayer;
     ComponentHandle<PlayerAnimationComponent>  mAnimation;
     ComponentHandle<BallHolderComponent>       mHolder;
+
+};
+
+class AttackAction
+{
+public:
+    AttackAction();
+    void execute(ComponentHandle<PlayerControlledComponent> player, ComponentHandle<PlayerAnimationComponent> animation);
+    bool isFinished();
+
+private:
+    void runTask();
+
+private:
+    sf::Thread mThread;
+    sf::Mutex  mMutex;
+    bool       mFinished;
+    Clock      mClock;
+    ComponentHandle<PlayerControlledComponent> mPlayer;
+    ComponentHandle<PlayerAnimationComponent>  mAnimation;
 
 };
 
@@ -58,6 +78,7 @@ private:
     Slot mBeforeTick;
     Slot mJoystickButtonPressedSlot;
     Slot mJoystickXAxisUsedSlot;
+    ThrowAction mThrowAction;
     AttackAction mAttackAction;
 };
 

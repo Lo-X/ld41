@@ -11,6 +11,8 @@
 #include "systems/PhysicsSystem.hpp"
 #include "systems/AnimationSystem.hpp"
 #include "systems/BallHolderSystem.hpp"
+#include "AIController.hpp"
+#include "systems/AIControlledSystem.hpp"
 #include <Fluffy/ECS/EntityManager.hpp>
 #include <Fluffy/ECS/SystemManager.hpp>
 #include <Fluffy/Utility/Clock.hpp>
@@ -32,6 +34,7 @@ Application::Application(unsigned int width, unsigned int height, const std::str
     mServiceContainer.set<FontHolder>();
 
     mServiceContainer.set<PlayerController>(&mServiceContainer);
+    mServiceContainer.set<AIController>(&mServiceContainer);
 
     mServiceContainer.give<sf::RenderWindow>(mWindow);
 
@@ -45,12 +48,17 @@ Application::Application(unsigned int width, unsigned int height, const std::str
     mServiceContainer.get<TextureHolder>()->get("wall").setRepeated(true);
     mServiceContainer.get<TextureHolder>()->load("tile1", "assets/textures/tile1.png");
     mServiceContainer.get<TextureHolder>()->get("tile1").setRepeated(true);
+    mServiceContainer.get<TextureHolder>()->load("player_throwing", "assets/textures/player_throwing.png");
     mServiceContainer.get<TextureHolder>()->load("player_attacking", "assets/textures/player_attacking.png");
     mServiceContainer.get<TextureHolder>()->load("player_standing", "assets/textures/player_standing.png");
     mServiceContainer.get<TextureHolder>()->load("player_jumping", "assets/textures/player_jumping.png");
     mServiceContainer.get<TextureHolder>()->load("player_running", "assets/textures/player_running.png");
+    mServiceContainer.get<TextureHolder>()->load("ai_attacking", "assets/textures/ai_attacking.png");
+    mServiceContainer.get<TextureHolder>()->load("ai_standing", "assets/textures/ai_standing.png");
+    mServiceContainer.get<TextureHolder>()->load("ai_running", "assets/textures/ai_running.png");
     mServiceContainer.get<TextureHolder>()->load("player_dead", "assets/textures/player_dead.png");
     mServiceContainer.get<TextureHolder>()->load("ball", "assets/textures/ball.png");
+    mServiceContainer.get<TextureHolder>()->load("goal", "assets/textures/goal.png");
 
     // Stats
     mStatisticsText.setFont(mServiceContainer.get<FontHolder>()->get("main"));
@@ -70,6 +78,7 @@ Application::Application(unsigned int width, unsigned int height, const std::str
     mServiceContainer.get<SystemManager>()->add<PhysicsSystem>();
     mServiceContainer.get<SystemManager>()->add<BallHolderSystem>();
     mServiceContainer.get<SystemManager>()->add<PlayerControlledSystem>();
+    mServiceContainer.get<SystemManager>()->add<AIControlledSystem>();
     // ...
     mServiceContainer.get<SystemManager>()->configure();
 }

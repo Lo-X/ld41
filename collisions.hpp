@@ -10,6 +10,8 @@
 #include "components/SpeedComponent.hpp"
 #include "components/PlayerAnimation.hpp"
 #include "components/BallHolder.hpp"
+#include "components/AIControlled.hpp"
+#include "components/Ball.hpp"
 
 void playerCollideWithPlatform(Entity player, Entity platform)
 {
@@ -30,7 +32,7 @@ void playerCollideWithPlatform(Entity player, Entity platform)
         playerSpeed->x = 0;
         playerSpeed->y = 0;
     }
-    if (playerControlled.isValid() && playerControlled->action != PlayerControlledComponent::Throw) {
+    if (playerControlled.isValid() && playerControlled->action != PlayerControlledComponent::Throw && playerControlled->action != PlayerControlledComponent::Attack) {
         playerControlled->action = PlayerControlledComponent::Standby;
 
         if (playerAnimation.isValid()) {
@@ -62,11 +64,57 @@ void playerCollideWithBall(Entity player, Entity ball)
 {
     auto holder = player.component<BallHolderComponent>();
     auto controlled = player.component<PlayerControlledComponent>();
+    auto taken = ball.component<BallComponent>();
 
-    if (controlled->action != PlayerControlledComponent::Throw) {
+    if (!taken->taken && controlled->canMove()) {
         holder->ball = ball;
         holder->holding = true;
+        taken->taken = true;
     }
+}
+
+void playerCollideWithSkeleton(Entity player, Entity skeleton)
+{
+    auto playerBody = player.component<BodyComponent>();
+    auto playerControlled = player.component<PlayerControlledComponent>();
+    auto skeletonBody = skeleton.component<BodyComponent>();
+
+    if (playerControlled->action == PlayerControlledComponent::Attack) {
+        auto skeletonSpeed = skeleton.component<SpeedComponent>();
+        auto skeletonHolder = skeleton.component<BallHolderComponent>();
+        auto skeletonControlled = skeleton.component<AIControlledComponent>();
+
+        if (skeletonHolder->holding) {
+            auto ball = skeletonHolder->ball.component<BallComponent>();
+            auto ballBody = skeletonHolder->ball.component<BodyComponent>();
+            ball->taken = false;
+            ballBody->resting = false;
+            skeletonHolder->holding = false;
+        }
+        skeletonControlled->action = AIControlledComponent::Stunned;
+
+        if (playerBody->getPosition().x < skeletonBody->getPosition().x) {
+            // Player at the left of the skeleton
+            skeletonSpeed->x = 500.f;
+            skeletonSpeed->y = -100.f;
+        } else {
+            // Player at the right of the skeleton
+            skeletonSpeed->x = -500.f;
+            skeletonSpeed->y = -100.f;
+        }
+    } else {
+        if (abs((int)playerBody->getPosition().x - (int)skeletonBody->getPosition().x) > ((int)playerBody->getSize().x / 2 - 10)) {
+            return;
+        }
+        if (playerBody->getPosition().x < skeletonBody->getPosition().x) {
+            // Player at the left of the skeleton
+            playerBody->setPosition(skeletonBody->getPosition().x - 15, playerBody->getPosition().y);
+        } else {
+            // Player at the right of the skeleton
+            playerBody->setPosition(skeletonBody->getPosition().x + 15, playerBody->getPosition().y);
+        }
+    }
+
 }
 
 void ballCollideWithPlatform(Entity ball, Entity platform)
@@ -107,6 +155,67 @@ void ballCollideWithWall(Entity ball, Entity wall)
         ballBody->setPosition(wallBody->getPosition().x + wallBody->getSize().x + ballBody->getSize().x / 2, ballBody->getPosition().y);
     }
     ballSpeed->x = 0;
+}
+
+void skeletonCollideWithPlatform(Entity skeleton, Entity platform)
+{
+    auto skeletonBody = skeleton.component<BodyComponent>();
+
+    if (skeletonBody->resting) {
+        return;
+    }
+
+    auto skeletonSpeed = skeleton.component<SpeedComponent>();
+    auto skeletonAnimation = skeleton.component<PlayerAnimationComponent>();
+    auto skeletonControlled = skeleton.component<AIControlledComponent>();
+    auto platformBody = platform.component<BodyComponent>();
+
+    skeletonBody->setPosition(skeletonBody->getPosition().x, platformBody->getPosition().y);
+    skeletonBody->resting = true;
+    if (skeletonSpeed.isValid()) {
+        skeletonSpeed->x = 0;
+        skeletonSpeed->y = 0;
+    }
+    if (skeletonControlled.isValid() && skeletonControlled->action != AIControlledComponent::Throw && skeletonControlled->action != AIControlledComponent::Attack) {
+        skeletonControlled->action = AIControlledComponent::Standby;
+
+        if (skeletonAnimation.isValid()) {
+            skeletonAnimation->currentAnimation = PlayerAnimationComponent::Standing;
+        }
+    }
+}
+
+void skeletonCollideWithWall(Entity skeleton, Entity wall)
+{
+    auto skeletonBody = skeleton.component<BodyComponent>();
+    auto skeletonSpeed = skeleton.component<SpeedComponent>();
+
+    if (skeletonBody->resting) {
+        return;
+    }
+
+    auto wallBody = wall.component<BodyComponent>();
+
+    if (skeletonSpeed->x > 0) {
+        // Player at the left of the wall
+        skeletonBody->setPosition(wallBody->getPosition().x - skeletonBody->getSize().x / 2, skeletonBody->getPosition().y);
+    } else {
+        // Player at the right of the wall
+        skeletonBody->setPosition(wallBody->getPosition().x + wallBody->getSize().x + skeletonBody->getSize().x / 2, skeletonBody->getPosition().y);
+    }
+}
+
+void skeletonCollideWithBall(Entity skeleton, Entity ball)
+{
+    auto holder = skeleton.component<BallHolderComponent>();
+    auto controlled = skeleton.component<AIControlledComponent>();
+    auto taken = ball.component<BallComponent>();
+
+    if (!taken->taken && controlled->canMove()) {
+        holder->ball = ball;
+        holder->holding = true;
+        taken->taken = true;
+    }
 }
 
 #endif //LD41_COLLISIONS_HPP

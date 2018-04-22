@@ -1,16 +1,16 @@
 //
-// Created by loic on 21/04/18.
+// Created by loic on 22/04/18.
 //
 
-#ifndef LD41_PLAYERCONTROLLED_HPP
-#define LD41_PLAYERCONTROLLED_HPP
+#ifndef LD41_AICONTROLLED_HPP
+#define LD41_AICONTROLLED_HPP
 
 #include <Fluffy/ECS/Component.hpp>
 #include <SFML/System/Vector2.hpp>
 
 using namespace Fluffy::ECS;
 
-struct PlayerControlledComponent : public Component<PlayerControlledComponent>
+struct AIControlledComponent : public Component<AIControlledComponent>
 {
     enum Actions {
         Standby,
@@ -22,7 +22,7 @@ struct PlayerControlledComponent : public Component<PlayerControlledComponent>
         Stunned,
     };
 
-    PlayerControlledComponent() = default;
+    AIControlledComponent() = default;
 
     bool canMove() const {
         return action != Throw && action != Attack && action != Stunned;
@@ -32,4 +32,4 @@ struct PlayerControlledComponent : public Component<PlayerControlledComponent>
     sf::Vector2f speed = {250.f, 600.f}; // tweak to jump
 };
 
-#endif //LD41_PLAYERCONTROLLED_HPP
+#endif //LD41_AICONTROLLED_HPP

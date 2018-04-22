@@ -15,6 +15,8 @@
 #include "systems/AIControlledSystem.hpp"
 #include "systems/CameraSystem.hpp"
 #include "systems/UISystem.hpp"
+#include "components/SoundPlayer.hpp"
+#include "systems/SoundSystem.hpp"
 #include <Fluffy/ECS/EntityManager.hpp>
 #include <Fluffy/ECS/SystemManager.hpp>
 #include <Fluffy/Utility/Clock.hpp>
@@ -34,6 +36,8 @@ Application::Application(unsigned int width, unsigned int height, const std::str
 
     mServiceContainer.set<TextureHolder>();
     mServiceContainer.set<FontHolder>();
+    mServiceContainer.set<SoundHolder>();
+    mServiceContainer.set<MusicHolder>();
 
     mServiceContainer.set<PlayerController>(&mServiceContainer);
     mServiceContainer.set<AIController>(&mServiceContainer);
@@ -66,6 +70,18 @@ Application::Application(unsigned int width, unsigned int height, const std::str
     mServiceContainer.get<TextureHolder>()->load("ui_goal", "assets/textures/ui_goal.png");
     mServiceContainer.get<TextureHolder>()->load("ui_points_player", "assets/textures/ui_points_player.png");
     mServiceContainer.get<TextureHolder>()->load("ui_points_ai", "assets/textures/ui_points_ai.png");
+    mServiceContainer.get<TextureHolder>()->load("ui_title", "assets/textures/ui_title.png");
+
+    mServiceContainer.get<SoundHolder>()->load("applause", "assets/sounds/applause.ogg");
+    mServiceContainer.get<SoundHolder>()->load("goal", "assets/sounds/goal.ogg");
+    mServiceContainer.get<SoundHolder>()->load("jump_ai", "assets/sounds/jump_ai.ogg");
+    mServiceContainer.get<SoundHolder>()->load("jump_player", "assets/sounds/jump_player.ogg");
+    mServiceContainer.get<SoundHolder>()->load("pickup", "assets/sounds/pickup.ogg");
+    mServiceContainer.get<SoundHolder>()->load("punch", "assets/sounds/punch.ogg");
+    mServiceContainer.get<SoundHolder>()->load("throw", "assets/sounds/throw.ogg");
+
+    mServiceContainer.get<MusicHolder>()->load("main", "assets/musics/main.ogg");
+    mServiceContainer.get<MusicHolder>()->setVolume(65);
 
     // Stats
     mStatisticsText.setFont(mServiceContainer.get<FontHolder>()->get("main"));
@@ -88,6 +104,7 @@ Application::Application(unsigned int width, unsigned int height, const std::str
     mServiceContainer.get<SystemManager>()->add<AIControlledSystem>();
     mServiceContainer.get<SystemManager>()->add<CameraSystem>();
     mServiceContainer.get<SystemManager>()->add<UISystem>();
+    mServiceContainer.get<SystemManager>()->add<SoundSystem>();
     // ...
     mServiceContainer.get<SystemManager>()->configure();
 }

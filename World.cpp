@@ -24,6 +24,7 @@
 #include "components/PointsDisplay.hpp"
 #include "components/GoalMessage.hpp"
 #include "components/Text.hpp"
+#include "components/SoundPlayer.hpp"
 
 World::World(ServiceContainer &container)
 : mContainer(container)
@@ -59,6 +60,9 @@ void World::buildScene()
 
     auto textures = mContainer.get<TextureHolder>();
     auto entityManager = mContainer.get<EntityManager>();
+
+    auto sound = entityManager->createEntity();
+    sound.assign<SoundPlayerComponent>(mContainer.get<SoundHolder>());
 
     // @todo dynamic loading from file // Tiled?
     auto background = entityManager->createEntity();
@@ -171,46 +175,13 @@ void World::buildScene()
     animation->animations[PlayerAnimationComponent::Dead].setDuration(milliseconds(2000));
     animation->animations[PlayerAnimationComponent::Dead].setRepeating(false);
 
-    mBall = entityManager->createEntity();
-    body = mBall.assign<BodyComponent>(BodyComponent::Ball, true, true);
-    body->setPosition(ballSpawnX, ballSpawnY);
-    body->setSize({15, 15});
-    body->setOrigin({8, 7});
-    body->resting = false;
-    body->collisionCallbacks[BodyComponent::Platform] = ballCollideWithPlatform;
-    body->collisionCallbacks[BodyComponent::Wall] = ballCollideWithWall;
-    body->collisionCallbacks[BodyComponent::Goal] = [&] (Entity ball, Entity goal) {
-        auto taken = ball.component<BallComponent>();
-
-        if (!taken->taken()) {
-            auto body = ball.component<BodyComponent>();
-            auto speed = ball.component<SpeedComponent>();
-            auto team = goal.component<TeamComponent>();
-            body->setPosition(ballSpawnX + 400, -80000);
-            body->resting = false;
-            speed->x = 0;
-            speed->y = 0;
-
-            mGoalWaiting = true;
-            TeamComponent::Teams t = team->getOpposing(team->team);
-            mContainer.get<EventManager>()->emit(GoalScoredEvent(t));
-        }
-    };
-    mBall.assign<SpeedComponent>();
-    mBall.assign<BallComponent>(mContainer.get<EventManager>());
-    auto drawable = mBall.assign<DrawableComponent>(sf::Sprite(textures->get("ball")), DrawableComponent::Layer::Scene);
-    drawable->sprite.setOrigin(8, 7);
-
-    spawnSkeleton({ballSpawnX + 200, 10}, AIControlledComponent::Attacker);
-    spawnSkeleton({ballSpawnX + 900, 10}, AIControlledComponent::Keeper);
-
     auto goal1 = entityManager->createEntity();
     body = goal1.assign<BodyComponent>(BodyComponent::Goal, true, false);
     body->setPosition(20, 720-150);
     body->setSize({40, 120});
     body->setOrigin({20, 120});
     goal1.assign<TeamComponent>(TeamComponent::Player);
-    drawable = goal1.assign<DrawableComponent>(sf::Sprite(textures->get("goal")), DrawableComponent::Layer::Scene);
+    auto drawable = goal1.assign<DrawableComponent>(sf::Sprite(textures->get("goal")), DrawableComponent::Layer::Scene);
     drawable->sprite.setOrigin({20, 120});
     drawable->sprite.setScale({-1.f, 1});
 
@@ -228,15 +199,8 @@ void World::buildUi()
 {
     auto entityManager = mContainer.get<EntityManager>();
 
-    auto help = entityManager->createEntity();
-    auto body = help.assign<BodyComponent>(BodyComponent::None, false, false);
-    body->setSize({653, 124});
-    body->setPosition(1280.f/2 - 652.f/2, 720-124-8);
-    help.assign<DrawableComponent>(sf::Sprite(mContainer.get<TextureHolder>()->get("ui_help")), DrawableComponent::Layer::Foreground);
-    help.assign<HelpMessageComponent>();
-
     auto goal = entityManager->createEntity();
-    body = goal.assign<BodyComponent>(BodyComponent::None, false, false);
+    auto body = goal.assign<BodyComponent>(BodyComponent::None, false, false);
     body->setSize({460, 124});
     body->setPosition(1280.f/2 - 460.f/2, 720.f/2 - 124/2.f);
     auto drawable = goal.assign<DrawableComponent>(sf::Sprite(mContainer.get<TextureHolder>()->get("ui_goal")), DrawableComponent::Layer::Foreground);
@@ -270,6 +234,14 @@ void World::buildUi()
     text->text.setFillColor(sf::Color(36, 36, 36));
     text->text.setString("0");
     text->text.setPosition(1280-10-121 + 30, 15);
+
+    auto title = entityManager->createEntity();
+    body = title.assign<BodyComponent>(BodyComponent::None, false, false);
+    body->setSize({1280, 720});
+    body->setPosition(0, 0);
+    title.assign<DrawableComponent>(sf::Sprite(mContainer.get<TextureHolder>()->get("ui_title")), DrawableComponent::Layer::Foreground);
+    message = title.assign<HelpMessageComponent>();
+    message->duration = seconds(5.f);
 }
 
 void World::spawnSkeleton(sf::Vector2f position, AIControlledComponent::Role role) const
@@ -343,6 +315,57 @@ void World::markDeadEntities()
 {
 
 }
+
+void World::startGame()
+{
+    if (mStarted) { return; }
+
+    auto entityManager = mContainer.get<EntityManager>();
+    auto textures = mContainer.get<TextureHolder>();
+
+    mBall = entityManager->createEntity();
+    auto body = mBall.assign<BodyComponent>(BodyComponent::Ball, true, true);
+    body->setPosition(ballSpawnX, ballSpawnY);
+    body->setSize({15, 15});
+    body->setOrigin({8, 7});
+    body->resting = false;
+    body->collisionCallbacks[BodyComponent::Platform] = ballCollideWithPlatform;
+    body->collisionCallbacks[BodyComponent::Wall] = ballCollideWithWall;
+    body->collisionCallbacks[BodyComponent::Goal] = [&] (Entity ball, Entity goal) {
+        auto taken = ball.component<BallComponent>();
+
+        if (!taken->taken()) {
+            auto body = ball.component<BodyComponent>();
+            auto speed = ball.component<SpeedComponent>();
+            auto team = goal.component<TeamComponent>();
+            body->setPosition(ballSpawnX + 400, -80000);
+            body->resting = false;
+            speed->x = 0;
+            speed->y = 0;
+
+            mGoalWaiting = true;
+            TeamComponent::Teams t = team->getOpposing(team->team);
+            mContainer.get<EventManager>()->emit(GoalScoredEvent(t));
+        }
+    };
+    mBall.assign<SpeedComponent>();
+    mBall.assign<BallComponent>(mContainer.get<EventManager>());
+    auto drawable = mBall.assign<DrawableComponent>(sf::Sprite(textures->get("ball")), DrawableComponent::Layer::Scene);
+    drawable->sprite.setOrigin(8, 7);
+
+    spawnSkeleton({ballSpawnX + 600, 10}, AIControlledComponent::Attacker);
+    spawnSkeleton({ballSpawnX + 900, 10}, AIControlledComponent::Keeper);
+
+    auto help = entityManager->createEntity();
+    body = help.assign<BodyComponent>(BodyComponent::None, false, false);
+    body->setSize({653, 124});
+    body->setPosition(1280.f/2 - 652.f/2, 720-124-8);
+    help.assign<DrawableComponent>(sf::Sprite(mContainer.get<TextureHolder>()->get("ui_help")), DrawableComponent::Layer::Foreground);
+    help.assign<HelpMessageComponent>();
+
+    mStarted = true;
+}
+
 
 void World::respawnBall()
 {

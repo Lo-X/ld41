@@ -72,6 +72,11 @@ struct GoalScoredEvent : public Event<GoalScoredEvent>
     TeamComponent::Teams team;
 };
 
+struct JumpAiEvent : public Event<JumpAiEvent> {};
+struct JumpPlayerEvent : public Event<JumpPlayerEvent> {};
+struct PunchEvent : public Event<PunchEvent> {};
+struct ThrowEvent : public Event<ThrowEvent> {};
+
 
 
 #endif //LD41_EVENTS_HPP

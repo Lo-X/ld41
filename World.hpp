@@ -30,6 +30,8 @@ public:
     void destroyDeadEntities() {}
 
     bool waiting() const { return mGoalWaiting; }
+    bool started() const { return mStarted; }
+    void startGame();
     void respawnBall();
     void spawnSkeleton(sf::Vector2f position, AIControlledComponent::Role role) const;
 
@@ -47,6 +49,7 @@ private:
 
     std::vector<Entity> mMarkedForDestruction;
     bool              mGoalWaiting = false;
+    bool              mStarted = false;
     Entity            mBall;
 };
 

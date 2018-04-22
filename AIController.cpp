@@ -254,6 +254,7 @@ void AIController::onTick(const GameTickEvent &tick)
                         speed->y = -controller->speed.y;
                         body->resting = false;
                         body->setPosition(body->getPosition().x + 2.f, body->getPosition().y);
+                        mContainer->get<EventManager>()->emit(JumpAiEvent());
                     } else {
                         if (!holder->holding && abs((int)diff.x) <= (body->getSize().x) && controller->canMove()) {
                             // Set the right direction just in case
@@ -270,6 +271,7 @@ void AIController::onTick(const GameTickEvent &tick)
                             SAttackAction* action = new SAttackAction();
                             action->execute(controller, animation);
                             mAttackActions.push_back(action);
+                            mContainer->get<EventManager>()->emit(PunchEvent());
                         } else {
                             if (diff.x < 0) {
                                 animation->currentAnimation = PlayerAnimationComponent::Walking;
@@ -339,6 +341,7 @@ void AIController::onTick(const GameTickEvent &tick)
                         SThrowAction* action = new SThrowAction();
                         action->execute(controller, animation, holder);
                         mThrowActions.push_back(action);
+                        mContainer->get<EventManager>()->emit(ThrowEvent());
                     } else {
                         if (diff < 0) {
                             animation->currentAnimation = PlayerAnimationComponent::Walking;
@@ -450,6 +453,8 @@ void AIController::onBallTaken(const BallTakenEvent &event)
             auto controller = entity.component<AIControlledComponent>();
             if (entity != holder && controller->role == AIControlledComponent::Role::Keeper) {
                 controller->state = AIControlledComponent::Backup;
+            } else {
+                controller->state = AIControlledComponent::Idle;
             }
         }
         holder.component<AIControlledComponent>()->state = AIControlledComponent::GoForGoal;

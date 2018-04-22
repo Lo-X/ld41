@@ -17,7 +17,7 @@ void UISystem::update(EntityManager &entityManager, Fluffy::Utility::Time dt)
 
         if (message->visible) {
             message->age += dt;
-            if (message->age > seconds(3)) {
+            if (message->age > message->duration) {
                 message->visible = false;
                 drawable->visible = false;
             }

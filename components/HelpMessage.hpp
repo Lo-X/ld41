@@ -16,6 +16,7 @@ struct HelpMessageComponent : public Component<HelpMessageComponent>
     HelpMessageComponent() = default;
 
     Time age;
+    Time duration = seconds(3.f);
     bool visible = true;
 };
 

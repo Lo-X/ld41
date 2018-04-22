@@ -284,11 +284,13 @@ void PlayerController::attack()
                 animation->animations[animation->currentAnimation].restart();
                 player->action = PlayerControlledComponent::Throw;
                 mThrowAction.execute(player, animation, holder);
+                mContainer->get<EventManager>()->emit(ThrowEvent());
             } else {
                 animation->currentAnimation = PlayerAnimationComponent::Attacking;
                 animation->animations[animation->currentAnimation].restart();
                 player->action = PlayerControlledComponent::Attack;
                 mAttackAction.execute(player, animation);
+                mContainer->get<EventManager>()->emit(PunchEvent());
             }
         }
     }
@@ -307,6 +309,7 @@ void PlayerController::jump()
             speed->y = -player->speed.y;
             body->resting = false;
             body->setPosition(body->getPosition().x + 2.f, body->getPosition().y);
+            mContainer->get<EventManager>()->emit(JumpPlayerEvent());
         }
     }
 }
